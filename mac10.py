@@ -64,48 +64,48 @@ async def create_websocket_connection():
         console.print(f"[red]Failed to connect to Node-RED WebSocket server: {e}[/red]")
         sys.exit(1)
 
-# class MACAddressCounter(Thread):
-#     '''Handles processing of MAC addresses asynchronously'''
+class MACAddressCounter(Thread):
+    '''Handles processing of MAC addresses asynchronously'''
 
-#     def __init__(self, queue, sock):
-#         Thread.__init__(self)
-#         self.queue = queue
-#         self.sock = sock  # Keep the TCP socket connection
+    def __init__(self, queue, sock):
+        Thread.__init__(self)
+        self.queue = queue
+        self.sock = sock  # Keep the TCP socket connection
     
-#     def run(self):
-#         while True:
-#             mac_address, ip_address = self.queue.get()  # Get MAC and IP address from the queue
-#             self.process_mac_address(mac_address, ip_address)
-#             self.queue.task_done()  # Signal task completion
+    def run(self):
+        while True:
+            mac_address, ip_address = self.queue.get()  # Get MAC and IP address from the queue
+            self.process_mac_address(mac_address, ip_address)
+            self.queue.task_done()  # Signal task completion
 
-#     def process_mac_address(self, mac_address, ip_address):
-#         '''Add MAC address to the device dictionary, display the table, and send data to Node-RED'''
-#         current_time = datetime.now()
-#         hostname = self.get_hostname(ip_address)
-#         is_new_device = False
+    def process_mac_address(self, mac_address, ip_address):
+        '''Add MAC address to the device dictionary, display the table, and send data to Node-RED'''
+        current_time = datetime.now()
+        hostname = self.get_hostname(ip_address)
+        is_new_device = False
 
-#         if mac_address not in device_info:
-#             # Store MAC address with its associated IP, hostname, and last seen time
-#             device_info[mac_address] = {
-#                 "ip": ip_address,
-#                 "hostname": hostname,
-#                 "last_seen": current_time,
-#                 "online": True
-#             }
-#             is_new_device = True
-#             console.print(f"[green]New device detected:[/] MAC {mac_address}, IP {ip_address}")
+        if mac_address not in device_info:
+            # Store MAC address with its associated IP, hostname, and last seen time
+            device_info[mac_address] = {
+                "ip": ip_address,
+                "hostname": hostname,
+                "last_seen": current_time,
+                "online": True
+            }
+            is_new_device = True
+            console.print(f"[green]New device detected:[/] MAC {mac_address}, IP {ip_address}")
 
-#             # Send data to Node-RED
-#             self.send_data_to_node_red(mac_address, ip_address, hostname, "online")
+            # Send data to Node-RED
+            self.send_data_to_node_red(mac_address, ip_address, hostname, "online")
 
-#         else:
-#             # Update the last seen time and set the device as online
-#             device_info[mac_address]["last_seen"] = current_time
-#             device_info[mac_address]["online"] = True
+        else:
+            # Update the last seen time and set the device as online
+            device_info[mac_address]["last_seen"] = current_time
+            device_info[mac_address]["online"] = True
 
-#         # Only refresh the table if there's a new device or status change
-#         if is_new_device:
-#             self.display_device_table()
+        # Only refresh the table if there's a new device or status change
+        if is_new_device:
+            self.display_device_table()
 
 #     def display_device_table(self):
 #         '''Displays a table of all unique devices and their online/offline status'''

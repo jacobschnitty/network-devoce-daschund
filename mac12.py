@@ -1,6 +1,8 @@
 import subprocess, json, pyshark, signal, sys, asyncio, websockets
+from concurrent.futures import ThreadPoolExecutor
 from rich.console import Console
 from rich.prompt import Prompt
+from rich.table import Table
 from threading import Thread
 from queue import Queue
 from datetime import datetime, timedelta
@@ -41,7 +43,14 @@ def handle_packet(packet):
 def sniff_packets(interface):
     '''Packet capture logic running in a separate thread'''
     console.print(f"Starting packet capture on interface {interface}")
+    
+    # Create and set a new event loop for this thread
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    # Start packet capture using the new event loop
     capture = pyshark.LiveCapture(interface=interface)
+    
     for packet in capture.sniff_continuously():
         handle_packet(packet)
 
@@ -49,7 +58,7 @@ def start_websocket_client():
     '''Start WebSocket client in its own thread using asyncio'''
     asyncio.run(websocket_client())
 
-def get_interface_names():
+def 1interface_names():
     '''Retrieve network interfaces and their status'''
     interfaces = {}
     try:
