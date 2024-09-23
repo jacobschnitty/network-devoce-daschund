@@ -1,0 +1,399 @@
+[
+    {
+        "id": "2c112238437a4d7c",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "21d8cbcf8e890d9b",
+        "type": "tcp in",
+        "z": "2c112238437a4d7c",
+        "name": "",
+        "server": "server",
+        "host": "",
+        "port": "1234",
+        "datamode": "stream",
+        "datatype": "utf8",
+        "newline": "",
+        "topic": "",
+        "trim": false,
+        "base64": false,
+        "tls": "",
+        "x": 680,
+        "y": 160,
+        "wires": [
+            [
+                "914e77a0b7ac0dd2"
+            ]
+        ],
+        "info": "This node listens for incoming TCP connections on port 1234. It’s set to receive data as a stream in UTF-8 format."
+    },
+    {
+        "id": "914e77a0b7ac0dd2",
+        "type": "json",
+        "z": "2c112238437a4d7c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 870,
+        "y": 160,
+        "wires": [
+            [
+                "eaf9f155f85b5ec8"
+            ]
+        ],
+        "info": "Converts the incoming msg.payload from a string (presumably JSON) into a valid JavaScript object. It ensures that the data is parsed correctly before further processing."
+    },
+    {
+        "id": "095e06f93ba7b77f",
+        "type": "comment",
+        "z": "2c112238437a4d7c",
+        "name": "Flow Structure",
+        "info": " - TCP-In node listens for incoming device data.\n - The JSON parser node converts the string data into a JavaScript object.\n - The function node updates the list of devices, adding or updating based on MAC address, and filters out devices not seen in the last 2 minutes.\n \n - The inject and cleanup function nodes periodically reset the stored device data.",
+        "x": 670,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "fda1ac3e5ff83748",
+        "type": "inject",
+        "z": "2c112238437a4d7c",
+        "name": "15 second trigger",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "15",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "15",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 1150,
+        "y": 60,
+        "wires": [
+            [
+                "70b06f46b4545303"
+            ]
+        ]
+    },
+    {
+        "id": "eaf9f155f85b5ec8",
+        "type": "function",
+        "z": "2c112238437a4d7c",
+        "name": "Real-Time Device Manager",
+        "func": "// Get the current list of devices from the flow variable\nlet devices = flow.get(\"devices\") || [];\n\n// Validate the incoming device data\nif (!msg.payload || !msg.payload.mac_address || !msg.payload.ip_address || !msg.payload.hostname) {\n    node.error(\"Missing critical device data (IP, MAC, or hostname).\", msg)\n;    return null; // Stops the flow if the data is invalid\n}\n\n// Get the incoming device data from msg.payload\nlet newDevice = {\n    ip: msg.payload.ip_address,\n    mac: msg.payload.mac_address,\n    hostname: msg.payload.hostname,\n    lastSeen: new Date().toISOString() // Timestamp for last update\n};\n\n// Check if the device (based on MAC address) is already in the list\nlet existingDevice = devices.find(device => device.mac === newDevice.mac);\n\nif (existingDevice) {\n    // Update existing device's IP or last seen timestamp if necessary\n    existingDevice.ip = newDevice.ip;\n    existingDevice.lastSeen = newDevice.lastSeen;\n} else {\n    // Add new device if it's not already in the list\n    devices.push(newDevice);\n}\n\n// Store the updated devices list back into the flow variable\nflow.set(\"devices\", devices);\n\n// Remove devices not seen in the last 2 minutes (120000 milliseconds)\nlet currentTime = new Date().getTime();\ndevices = devices.filter(device => currentTime - new Date(device.lastSeen).getTime() < 120000);\n\n// Store the cleaned-up device list back into the flow variable\nflow.set(\"devices\", devices);\n\n// Pass the updated devices list to the next node (e.g., for dashboard display)\nmsg.payload = devices;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1120,
+        "y": 160,
+        "wires": [
+            [
+                "d20335135e7238b1",
+                "e301da4597e25643"
+            ]
+        ]
+    },
+    {
+        "id": "d20335135e7238b1",
+        "type": "debug",
+        "z": "2c112238437a4d7c",
+        "name": "Processed JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1470,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "9011f08632f399e1",
+        "type": "debug",
+        "z": "2c112238437a4d7c",
+        "name": "Parsed JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1460,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "e301da4597e25643",
+        "type": "ui-table",
+        "z": "2c112238437a4d7c",
+        "group": "16be699ad307d375",
+        "name": "Device List UI Table",
+        "label": "text",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "maxrows": 0,
+        "passthru": false,
+        "autocols": true,
+        "showSearch": true,
+        "selectionType": "click",
+        "columns": [],
+        "mobileBreakpoint": "lg",
+        "mobileBreakpointType": "defaults",
+        "action": "append",
+        "x": 1470,
+        "y": 160,
+        "wires": [
+            [
+                "b9b9682ec18ae0be"
+            ]
+        ]
+    },
+    {
+        "id": "70b06f46b4545303",
+        "type": "function",
+        "z": "2c112238437a4d7c",
+        "d": true,
+        "name": "Reset device list flow context",
+        "func": "// Reset the device list in the flow context\nflow.set(\"devices\", []);\n\n// Send an empty payload to indicate reset\n// msg.payload = { reset: true, message: \"Device list has been reset.\" };\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1120,
+        "y": 100,
+        "wires": [
+            [
+                "e301da4597e25643"
+            ]
+        ]
+    },
+    {
+        "id": "18247c6b6888d4c3",
+        "type": "websocket in",
+        "z": "2c112238437a4d7c",
+        "name": "",
+        "server": "57d54e89ef155553",
+        "client": "",
+        "x": 660,
+        "y": 320,
+        "wires": [
+            [
+                "c6e6d69643c15bed",
+                "ab5b10be06d2396d"
+            ]
+        ]
+    },
+    {
+        "id": "e2e44bd2858cadfb",
+        "type": "debug",
+        "z": "2c112238437a4d7c",
+        "name": "Parsed websocket data",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1490,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "b9b9682ec18ae0be",
+        "type": "ui-template",
+        "z": "2c112238437a4d7c",
+        "group": "",
+        "page": "",
+        "ui": "10b2f820644415b9",
+        "name": "custom fonts",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "head": "",
+        "format": "<head>\n  <link href=\"https://fonts.googleapis.com/css2?family=Alegreya:wght@400;700&family=Red+Hat+Mono:wght@400;700&display=swap\" rel=\"stylesheet\">\n  <style>\n     body {\n         font-family: 'Red Hat Mono', monospace; /* Default font */\n     }\n     h1, h2, h3, h4, h5, h6 {\n         font-family: 'Alegreya', serif; /* Headings will use Alegreya */\n     }\n     .device-table th, .device-table td {\n         font-family: 'Red Hat Mono', monospace; /* Table contents use Red Hat Mono */\n     }\n  </style>\n</head>",
+        "storeOutMessages": true,
+        "passthru": true,
+        "resendOnRefresh": true,
+        "templateScope": "site:style",
+        "className": "",
+        "x": 1670,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c6e6d69643c15bed",
+        "type": "json",
+        "z": "2c112238437a4d7c",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 870,
+        "y": 280,
+        "wires": [
+            [
+                "e2e44bd2858cadfb"
+            ]
+        ]
+    },
+    {
+        "id": "ab5b10be06d2396d",
+        "type": "debug",
+        "z": "2c112238437a4d7c",
+        "name": "Raw websocket data",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1480,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "6fb9c47ada9f2b23",
+        "type": "inject",
+        "z": "2c112238437a4d7c",
+        "name": "sample (valid) JSON",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"name\":\"John\", \"age\":30, \"car\":null}",
+        "payloadType": "json",
+        "x": 640,
+        "y": 260,
+        "wires": [
+            [
+                "c6e6d69643c15bed"
+            ]
+        ]
+    },
+    {
+        "id": "16be699ad307d375",
+        "type": "ui-group",
+        "name": "* Group 1",
+        "page": "f533e16c8b459545",
+        "width": "6",
+        "height": "1",
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "57d54e89ef155553",
+        "type": "websocket-listener",
+        "path": "ws/devices",
+        "wholemsg": "true"
+    },
+    {
+        "id": "10b2f820644415b9",
+        "type": "ui-base",
+        "name": "* Dashboard 1",
+        "path": "/dashboard",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control",
+            "ui-table",
+            "ui-template"
+        ],
+        "showPathInSidebar": false,
+        "showPageTitle": true,
+        "navigationStyle": "default",
+        "titleBarStyle": "default"
+    },
+    {
+        "id": "f533e16c8b459545",
+        "type": "ui-page",
+        "name": "* Page 1",
+        "ui": "10b2f820644415b9",
+        "path": "/1",
+        "icon": "home",
+        "layout": "grid",
+        "theme": "a0f924899e800f8d",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "768",
+                "cols": "6"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            },
+            {
+                "name": "Mobile",
+                "px": "480",
+                "cols": "3"
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "a0f924899e800f8d",
+        "type": "ui-theme",
+        "name": "* Theme 1",
+        "colors": {
+            "surface": "#ffffff",
+            "primary": "#b281d9",
+            "bgPage": "#eeeeee",
+            "groupBg": "#ffffff",
+            "groupOutline": "#cccccc"
+        },
+        "sizes": {
+            "density": "default",
+            "pagePadding": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "4px",
+            "widgetGap": "12px"
+        }
+    }
+]
