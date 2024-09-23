@@ -23,37 +23,6 @@ DEVICE_TIMEOUT = timedelta(minutes=2)
 # WebSocket URI (Node-RED WebSocket server)
 WS_URI = "ws://192.168.1.252:1880/ws/devices"
 
-# # Function to start TCP server for loopback listening
-# def start_tcp_listener(host='localhost', port=65432):
-#     '''Start a TCP server to listen for loopback messages'''
-#     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-#         s.bind((host, port))
-#         s.listen()
-#         console.print(f"[yellow]TCP Loopback Listener started on {host}:{port}[/yellow]")
-        
-#         while True:
-#             conn, addr = s.accept()
-#             with conn:
-#                 console.print(f"[green]Connected by {addr}[/green]")
-#                 while True:
-#                     data = conn.recv(1024)
-#                     if not data:
-#                         break
-#                     # Assuming the data is a JSON string
-#                     message = data.decode()
-#                     console.print(f"[cyan]Loopback Data received:[/] {message}")
-#                     try:
-#                         # Try to load JSON to verify integrity
-#                         json_data = json.loads(message)
-#                         console.print(f"[green]Valid JSON received: {json_data}[/green]")
-#                     except json.JSONDecodeError:
-#                         console.print(f"[red]Received data is not valid JSON: {message}[/red]")
-
-# # Thread to run the TCP listener
-# def run_tcp_listener():
-#     listener_thread = threading.Thread(target=start_tcp_listener, daemon=True)
-#     listener_thread.start()
-
 def get_interface_names():
     '''Retrieve network interfaces and their status'''
     interfaces = {}
